@@ -1,0 +1,252 @@
+\documentclass[a4paper,12pt,parskip=half]{scrartcl}
+%\documentclass[a4paper,12pt]{article}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage[euler-digits,euler-hat-accent]{eulervm}
+\usepackage{listings}
+\usepackage{inconsolata}
+
+\renewcommand{\rmdefault}{pplx}
+\lstset{basicstyle=\ttfamily\scriptsize}
+\newcommand*{\tensor}[1]{\overline{\overline{\mathbold{#1}}}}
+\DeclareMathOperator{\erf}{erf}
+
+\title{How to avoid the polarization catastrophe in polarizable force fields}
+\author{Toon Verstraelen, Steven Vandenbrande, ...}
+
+%\setlength{\parskip}{0.3cm}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This document explains how to avoid the polarization catastrophe in a polarizable force field with 100\% certainty. Everything in this document is basically ``known'' in the literature. Unfortunately, some papers contain typos or lack clarity. The derivation in this document is validated with a simple Python implementation. (See \texttt{illustration.py}.) Atomic units are used throughout.
+\end{abstract}
+
+\section{The Coulomb self-interaction of any charge density is positive}
+
+This can be shown by transforming the self-energy of the charge distribution into Fourier space, making use of Parseval's theorem:
+%
+\begin{align}
+    E_\text{self}
+        &= \frac{1}{2} \iint \frac{ \rho(\mathbold{r}) \rho(\mathbold{r}') }{| \mathbold{r} - \mathbold{r}' |} d\mathbold{r} d\mathbold{r}' \\
+        &= \frac{1}{2} \int \rho(\mathbold{r}) \phi(\mathbold{r}) d\mathbold{r} \\
+        &= \frac{1}{2} \int \hat{\rho}(\mathbold{k}) \overline{\hat{\phi}}(\mathbold{k}) d\mathbold{k}
+\end{align}
+%
+where $\rho(\mathbold{r})$ is a charge distribution that can have positive and negative parts, $\phi(\mathbold{r})$ is the corresponding electrostatic potential, the hatted quantities are Fourier transforms and the overline is used to denote the complex conjugate. More specifically:
+%
+\begin{align}
+    \nabla^2 \phi(\mathbold{r}) &= -4\pi \rho(\mathbold{r}) \\
+    \hat{\rho}(\mathbold{k}) &= \int \rho(\mathbold{r}) \exp(-2\pi i \mathbold{k} \cdot \mathbold{r}) d\mathbold{r} \\
+    \hat{\phi}(\mathbold{k}) &= \int \phi(\mathbold{r}) \exp(-2\pi i \mathbold{k} \cdot \mathbold{r}) d\mathbold{r} = \frac{\hat{\rho}(\mathbold{k})}{\pi |\mathbold{k}|^2}
+\end{align}
+%
+After substitution, we obtain a trivially positive self-interaction energy:
+%
+\begin{align}
+    E_\text{self} &= \frac{1}{2\pi} \int \frac{ |\hat{\rho}(\mathbold{k})|^2 }{|\mathbold{k}|^2} d\mathbold{k}
+\end{align}
+%
+Conclusion: the Coulomb (or Hartree) kernel is positive definite. This is valid for periodic and non-periodic systems alike.
+
+
+\section{A general procedure to avoid the polarization catastrophe}
+
+Let us first introduce a basis of density response functions:
+%
+\begin{equation}
+    \rho(\mathbold{r}) = \rho_\text{ref}(\mathbold{r}) + \sum_{i=1}^n c_i f_i(\mathbold{r})
+\end{equation}
+%
+where $\rho_\text{ref}(\mathbold{r})$ is a reference density from which the basis functions $f_i(\mathbold{r})$ describe (small) deviations. In practice, the reference is usually the ground state density and the response basis consists of atomic s-, p-, d-, ... type functions.
+
+When we substitute the response density (without the reference) into the Coulomb self-energy, the result looks like a traditional polarizable force field, except that the diagonal terms are the self-interactions of the basis functions:
+%
+\begin{align}
+    E_\text{PFF} &= \frac{1}{2} \sum_{i=1}^n \sum_{j=1}^n c_i c_j T_{ij} \\
+    \label{eq:pff_matrix}
+    T_{ij} &= \iint \frac{ f_i(\mathbold{r}) f_j(\mathbold{r}') }{| \mathbold{r} - \mathbold{r}' |} d\mathbold{r} d\mathbold{r}'
+\end{align}
+%
+This energy is always positive and the matrix $T$ is thus also positive definite. This implies that this energy always has a proper unique minimum and the polarization catastrophe cannot occur for a polarizable force field defined in this way. Moreover, one has the freedom to increase the diagonal elements of $T$, which will only make it ``more'' positive definite.
+
+Conclusion: when the diagonal elements are equal to or larger than the Coulomb self-interaction of the response basis functions, there is no polarization catastrophe, no matter how close the atoms approach each other.
+
+Note: The above derivation just leads to a mathematical condition. It does not guarantee that PFFs constructed this way reproduce molecular polarizabilities accurately. In short, the electronic energy contains more than just the Hartree term, so this approach certainly misses some energy contributions.
+
+The rest of this document deals with practical conditions for PFFs with Gaussian s- and p-type functions.
+
+
+\section{General expressions for Coulomb interactions between s- and p-type functions}
+
+This section assumes (i) you have two normalized spherical (s-type) density response basis functions, $\rho_{s1}(r)$ and $\rho_{s2}(r)$ and (ii) you know the Coulomb interaction as function of the distance between the centers, $v(r)$. For this case, a simple procedure is given to derive energy expressions for higher multipole variants of $\rho_{s1}$ and $\rho_{s2}$. The following notation for Cartesian basis vectors is used: $\mathbold{r} = x \mathbold{1}_x + y \mathbold{1}_y + z \mathbold{1}_z$.
+
+A ``unit'' dipole function can be constructed as follows:
+%
+\begin{align}
+    \mathbold{\rho}_p(\mathbold{r}) \cdot \mathbold{s}
+        & = \lim_{\epsilon \rightarrow 0} \frac{1}{\epsilon} \left( -\rho_s(|\mathbold{r}|) + \rho_s(|\mathbold{r} - \epsilon \mathbold{s}|) \right) = -\nabla \rho_s(|\mathbold{r}|) \cdot \mathbold{s}
+\end{align}
+%
+where $\mathbold{s}$ is an arbitrary non-zero vector. This means that
+%
+\begin{equation}
+    \mathbold{\rho}_p(\mathbold{r}) = -\nabla \rho_s(|\mathbold{r}|) = \rho_{px}(\mathbold{r}) \mathbold{1}_x + \rho_{py}(\mathbold{r}) \mathbold{1}_y + \rho_{pz}(\mathbold{r}) \mathbold{1}_z
+\end{equation}
+%
+is a vector function, whose components are dipole-normalized p-type basis functions along the x-, y- and z-axis.
+
+Because the Coulomb energy is a bi-linear function of the two interacting densities, we can write the following:
+%
+\begin{equation}
+    \label{eq:ss_general}
+    T_{s1,s2} = v(|\mathbold{r}_1 - \mathbold{r}_2|)
+\end{equation}
+\begin{equation}
+    \mathbold{T}_{p1,s2} = -\nabla_1 T_{s1,s2} = -v'(|\mathbold{r}_1 - \mathbold{r}_2|) \frac{\mathbold{r}_1 - \mathbold{r}_2}{|\mathbold{r}_1 - \mathbold{r}_2|}
+\end{equation}
+\begin{equation}
+\begin{split}
+    \label{eq:pp_general}
+    \tensor{T}_{p1,p2} = -\nabla_2 \mathbold{T}_{p1,s2} =
+ -v''(|\mathbold{r}_1 - \mathbold{r}_2|) \frac{(\mathbold{r}_1 - \mathbold{r}_2) \otimes (\mathbold{r}_1 - \mathbold{r}_2)}{|\mathbold{r}_1 - \mathbold{r}_2|^2} \\
+       +v'(|\mathbold{r}_1 - \mathbold{r}_2|) \Biggl( \frac{-\tensor{1}}{|\mathbold{r}_1 - \mathbold{r}_2|}
+            + \frac{(\mathbold{r}_1 - \mathbold{r}_2) \otimes (\mathbold{r}_1 - \mathbold{r}_2)}{|\mathbold{r}_1 - \mathbold{r}_2|^3}
+            \Biggr)
+\end{split}
+\end{equation}
+
+When the centers of the response basis functions coincide, one gets the following limits:
+%
+\begin{align}
+    \lim_{|\mathbold{r}_1 - \mathbold{r}_2| \rightarrow 0} T_{s1,s2} &= \lim_{r\rightarrow 0} v(r) \\
+    \lim_{|\mathbold{r}_1 - \mathbold{r}_2| \rightarrow 0} \tensor{T}_{p1,p2} &= -\lim_{r\rightarrow 0} v''(r) \tensor{1}
+\end{align}
+
+
+\section{Expressions for Coulomb interactions between Gaussian s- and p-type functions}
+
+This section is a trivial application of the previous section for the case of normalized s-type Gaussian functions:
+%
+\begin{align}
+    \rho_{s1}(r) &= \left(\frac{\beta_1}{\pi}\right)^{\frac{3}{2}} \exp(-\beta_1^2 r^2) \\
+    \rho_{s2}(r) &= \left(\frac{\beta_2}{\pi}\right)^{\frac{3}{2}} \exp(-\beta_2^2 r^2)
+\end{align}
+%
+for which the Coulomb interaction is
+%
+\begin{equation}
+    \label{eq:ss_gauss}
+    v(r) = \frac{\erf(\beta r)}{r}
+\end{equation}
+%
+with $1/\beta^2 = 1/\beta_1^2 + 1/\beta_2^2$.
+
+We just need the first and second derivative of $v$ to compute the s-s, s-p and p-p interactions:
+%
+\begin{align}
+    v'(r) &= -\frac{\erf(\beta r)}{r^2} + \frac{2 \beta}{\sqrt{\pi} r} \exp(-\beta^2 r^2) \\
+    \label{eq:pp_gauss}
+    v''(r) &= 2\frac{\erf(\beta r)}{r^3} - \frac{2 \beta}{\sqrt{\pi} r^2} \exp(-\beta^2 r^2)
+     -\frac{2 \beta}{\sqrt{\pi} r^2} \exp(-\beta^2 r^2) - \frac{4 \beta^3}{\sqrt{\pi}} \exp(-\beta^2 r^2)\\
+           &= 2\frac{\erf(\beta r)}{r^3} - \frac{4 \beta}{\sqrt{\pi}} \exp(-\beta^2 r^2)
+              \left( \frac{1}{r^2} + \beta^2 \right)
+\end{align}
+
+When the centers of the Gaussian functions coincide, one gets the following limits:
+%
+\begin{align}
+    \lim_{|\mathbold{r}_1 - \mathbold{r}_2| \rightarrow 0} T_{s1,s2} &= \frac{2 \beta}{\sqrt{\pi}} \\
+    \lim_{|\mathbold{r}_1 - \mathbold{r}_2| \rightarrow 0} \tensor{T}_{p1,p2}
+        &= -\lim_{r\rightarrow 0} \frac{2}{r^3} \left[
+            \erf(\beta r) - \frac{2\beta}{\sqrt{\pi}} \exp(-\beta^2 r^2) (r + \beta^2 r^3)
+           \right] \tensor{1} \\
+        &= -\lim_{r\rightarrow 0} \frac{2}{3r^2} \frac{2\beta}{\sqrt{\pi}} \exp(-\beta^2 r^2) \left[
+            1
+            + 2\beta^2 r^2 + 2 \beta^4 r^4
+            - 1 - 3r^2\beta^2
+           \right] \tensor{1} \\
+        &= -\lim_{r\rightarrow 0} \frac{4\beta}{3\sqrt{\pi}} \exp(-\beta^2 r^2) \left[
+            -\beta^2 + 2\beta^4 r^2
+           \right] \tensor{1} \\
+        &= \frac{4 \beta^3}{3 \sqrt{\pi}} \tensor{1}
+\end{align}
+
+The self-interaction of a normalized s- and p-type function can be found by substituting $\beta = \beta_1 / \sqrt{2} = 1/2R_1$. ($R_1$ is the standard deviation of the Gaussian s-type function, often also called ``radius'' or ``width''.):
+%
+\begin{align}
+    \label{eq:ss_limit}
+    2 E_{s,\text{self}} &= \sqrt{\frac{2}{\pi}} \beta_1 = \frac{1}{\sqrt{\pi}R_1} \\
+    \label{eq:pp_limit}
+    2 E_{p,\text{self}} &= \sqrt{\frac{2}{\pi}} \frac{\beta_1^3}{3} = \frac{1}{6\sqrt{\pi}R_1^3}
+\end{align}
+
+This allows us to set the following bounds in a PFF on the atomic hardness ($\eta_1$) for s-type Gaussians and on the atomic polarizability ($\alpha_1$) for p-type Gaussians:
+%
+\begin{align}
+    \eta_1 &\ge \sqrt{\frac{2}{\pi}} \beta_1
+        & \eta_1 &\ge \frac{1}{\sqrt{\pi} R_1} \\
+    \alpha_1 &\le \sqrt{\frac{\pi}{2}} \frac{3}{\beta_1^3}
+        & \alpha_1 &\ge 6\sqrt{\pi} R_1^3
+\end{align}
+
+Alternative, if $\eta_1$ and $\alpha_1$ are given, the following bounds should be imposed on the $\beta_1$ or $R_1$:
+%
+\begin{align}
+    \beta_1 &\le \sqrt{\frac{\pi}{2}} \eta_1
+        & R_1 \ge \frac{1}{\sqrt{\pi} \eta_1} \\
+    \label{eq:bound_radii_pp}
+    \beta_1 &\le \left(\sqrt{\frac{\pi}{2}} \frac{3}{\alpha_1}\right)^{\frac{1}{3}}
+        & R_1 \ge \left(\frac{\alpha_1}{6 \sqrt{\pi}}\right)^{\frac{1}{3}}
+\end{align}
+
+
+\section{Numerical validation and illustration}
+
+The script \texttt{illustration.py} contains several unit tests that check the consistency of most equations in this document. It also generates a few plots that will be discussed below.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=10cm]{plot_gauss_ss.png}
+    \caption{Coulomb interaction between two s-type functions with $R_1=R_2=1.2$. Red: Eq.\ \eqref{eq:ss_gauss}. Blue: Eq.\ \eqref{eq:ss_general} after substituting Eq.\ \eqref{eq:ss_gauss}, centers approaching each other along x-axis, which is a rather trivial test of the implementation. Black: Eq.\ \eqref{eq:ss_limit}.}
+    \label{fig:gauss_ss}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=10cm]{plot_gauss_pp.png}
+    \caption{Coulomb interaction between two p-type functions with $R_1=R_2=0.8$. Red: negative of Eq.\ \eqref{eq:pp_gauss}. Blue: Eq.\ \eqref{eq:pp_general} after substituting Eq.\ \eqref{eq:pp_gauss}, centers approaching each other along x-axis. Black: Eq.\ \eqref{eq:pp_limit}.}
+    \label{fig:gauss_pp}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=10cm]{plot_eigenvaules_water_static.png}
+    \caption{Eigenvalues of the matrix $T$ from Eq.\ \eqref{eq:pff_matrix}, for Gaussian inducible dipoles in a water molecule with reasonable atomic polarizabilities, as function of a uniform scaling factor that is used to see the effect of shrinking the geometry to arbitrarily small sizes. Eq. \eqref{eq:bound_radii_pp} as an equality}
+    \label{fig:eigenvalues_water_static}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=10cm]{plot_eigenvaules_water_static_safe.png}
+    \caption{Eigenvalues of the matrix $T$ from Eq.\ \eqref{eq:pff_matrix}, for Gaussian inducible dipoles in a water molecule with reasonable atomic polarizabilities, as function of a uniform scaling factor that is used to see the effect of shrinking the geometry to arbitrarily small sizes. Without a proper treatment of the polarization catastrophe, this shrinking would result in negative eigenvalues. The radii are 10\% largeer than the limit given in Eq. \eqref{eq:bound_radii_pp}.}
+    \label{fig:eigenvalues_water_static_safe}
+\end{figure}
+
+Fig.\ \ref{fig:gauss_ss} is an illustration of the interaction between two identical normalized s-type Gaussians as function of the distance. The interaction energy is compared with the self-interaction derived above.
+
+Fig.\ \ref{fig:gauss_pp} is an illustration of the interaction between two normalized identical p-type Gaussians as function of the distance. The dipoles are aligned with the x-axis and approach each other along the x-axis. The interaction energy is compared with the self-interaction derived above.
+
+Fig.\ \ref{fig:eigenvalues_water_static} shows how the polarization catastrophe is systematically avoided for a water molecule whose geometry is arbitrarily compressed. The eigenvalues of the matrix $T$ stay positive, no matter how close the atoms are. This is the limiting case, i.e. using Eq. \eqref{eq:bound_radii_pp} as an equality, and hence some eigenvalues go rather quickly to zero. A similar result is shown in Fig.\ \ref{fig:eigenvalues_water_static_safe}, but with radii for the p-type functions that are 10\% above the limit imposed by Eq. \eqref{eq:bound_radii_pp}. In that case, all eigenvalues level of to a strictly positive constant for arbitrarily short distances between the p-type functions.
+
+
+
+\section{Python script \texttt{illustration.py}}
+
+\lstinputlisting[language=Python]{illustration.py}
+
+\end{document}
