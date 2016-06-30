@@ -74,7 +74,7 @@ When we substitute the response density (without the reference) into the Coulomb
 %
 This energy is always positive and the matrix $T$ is thus also positive definite. This implies that this energy always has a proper unique minimum and the polarization catastrophe cannot occur for a polarizable force field defined in this way. Moreover, one has the freedom to increase the diagonal elements of $T$, which will only make it ``more'' positive definite.
 
-Conclusion: when the diagonal elements are equal to or larger than the Coulomb self-interaction of the response basis functions, there is no polarization catastrophe, no matter how close the atoms approach each other.
+Conclusion: when the diagonal coefficients of PFF are equal to or larger than \textit{twice} the Coulomb self-interaction of the response basis functions, there is no polarization catastrophe, no matter how close the atoms approach each other.
 
 Note: The above derivation just leads to a mathematical condition. It does not guarantee that PFFs constructed this way reproduce molecular polarizabilities accurately. In short, the electronic energy contains more than just the Hartree term, so this approach certainly misses some energy contributions.
 
@@ -126,6 +126,8 @@ When the centers of the response basis functions coincide, one gets the followin
     \lim_{|\mathbold{r}_1 - \mathbold{r}_2| \rightarrow 0} T_{s1,s2} &= \lim_{r\rightarrow 0} v(r) \\
     \lim_{|\mathbold{r}_1 - \mathbold{r}_2| \rightarrow 0} \tensor{T}_{p1,p2} &= -\lim_{r\rightarrow 0} v''(r) \tensor{1}
 \end{align}
+
+A trivial but tedious generalization of this procedure yields interactions between higher Cartesian multipole functions.
 
 
 \section{Expressions for Coulomb interactions between Gaussian s- and p-type functions}
@@ -191,7 +193,7 @@ This allows us to set the following bounds in a PFF on the atomic hardness ($\et
     \eta_1 &\ge \sqrt{\frac{2}{\pi}} \beta_1
         & \eta_1 &\ge \frac{1}{\sqrt{\pi} R_1} \\
     \alpha_1 &\le \sqrt{\frac{\pi}{2}} \frac{3}{\beta_1^3}
-        & \alpha_1 &\ge 6\sqrt{\pi} R_1^3
+        & \alpha_1 &\le 6\sqrt{\pi} R_1^3
 \end{align}
 
 Alternative, if $\eta_1$ and $\alpha_1$ are given, the following bounds should be imposed on the $\beta_1$ or $R_1$:
@@ -237,9 +239,9 @@ The script \texttt{illustration.py} contains several unit tests that check the c
     \label{fig:eigenvalues_water_static_safe}
 \end{figure}
 
-Fig.\ \ref{fig:gauss_ss} is an illustration of the interaction between two identical normalized s-type Gaussians as function of the distance. The interaction energy is compared with the self-interaction derived above.
+Fig.\ \ref{fig:gauss_ss} is an illustration of the interaction between two normalized identical s-type Gaussians as function of the distance. The interaction energy is compared with the self-interaction derived above.
 
-Fig.\ \ref{fig:gauss_pp} is an illustration of the interaction between two normalized identical p-type Gaussians as function of the distance. The dipoles are aligned with the x-axis and approach each other along the x-axis. The interaction energy is compared with the self-interaction derived above.
+Fig.\ \ref{fig:gauss_pp} is an illustration of the interaction between two normalized identical p-type Gaussians as function of the distance. The dipoles are aligned with the x-axis and they approach each other along the x-axis. The interaction energy is compared with the self-interaction derived above.
 
 Fig.\ \ref{fig:eigenvalues_water_static} shows how the polarization catastrophe is systematically avoided for a water molecule whose geometry is arbitrarily compressed. The eigenvalues of the matrix $T$ stay positive, no matter how close the atoms are. This is the limiting case, i.e. using Eq. \eqref{eq:bound_radii_pp} as an equality, and hence some eigenvalues go rather quickly to zero. A similar result is shown in Fig.\ \ref{fig:eigenvalues_water_static_safe}, but with radii for the p-type functions that are 10\% above the limit imposed by Eq. \eqref{eq:bound_radii_pp}. In that case, all eigenvalues level of to a strictly positive constant for arbitrarily short distances between the p-type functions.
 
