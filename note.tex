@@ -28,7 +28,11 @@ This document explains how to avoid the polarization catastrophe in a polarizabl
 
 \section{The Coulomb self-interaction of any charge density is positive}
 
-This can be shown by transforming the self-energy of the charge distribution into Fourier space, making use of Parseval's theorem:
+The proof is given separately for finite and periodic systems because some technical details differ. Also keep in mind that there are many ways to define the Fourier transform in both cases, leading to different prefactors in the final expression for the self-energy in Fourier space.
+
+\subsection{Finite system}
+
+The first step is to transform the self-energy of the charge distribution into Fourier space, making use of Parseval's theorem:
 %
 \begin{align}
     E_\text{self}
@@ -51,7 +55,36 @@ After substitution, we obtain a trivially positive self-interaction energy:
     E_\text{self} &= \frac{1}{2\pi} \int \frac{ |\hat{\rho}(\mathbold{k})|^2 }{|\mathbold{k}|^2} d\mathbold{k}
 \end{align}
 %
-Conclusion: the Coulomb (or Hartree) kernel is positive definite. This is valid for periodic and non-periodic systems alike.
+Conclusion: the Coulomb (or Hartree) kernel is positive definite.
+
+
+\subsection{Periodic system}
+
+The proof for periodic systems follows the same logic but one has to be careful with some technical details: one can only reasonably define the energy per unit cell and the total charge has to be zero.
+%
+\begin{align}
+    E_\text{self}
+        &= \frac{1}{2} \int_{V_{cell}} d\mathbold{r} \int_{\mathbb{R}^3} d\mathbold{r}' \frac{ \rho(\mathbold{r}) \rho(\mathbold{r}') }{| \mathbold{r} - \mathbold{r}' |} \\
+        &= \frac{1}{2} \int_{V_{cell}} \rho(\mathbold{r}) \phi(\mathbold{r}) d\mathbold{r} \\
+        &= \frac{1}{2 V_\text{cell}}\sum_{\mathbf{k}} \hat{\rho}(\mathbold{k}) \overline{\hat{\phi}}(\mathbold{k})
+\end{align}
+%
+where $\rho(\mathbold{r})$ is a charge distribution that can have positive and negative parts, $\phi(\mathbold{r})$ is the corresponding electrostatic potential, the hatted quantities are Fourier transforms and the overline is used to denote the complex conjugate. The sum over all $\mathbold{k}$ vectors includes only those compatible with the periodic boundary conditions, i.e. the reciprocal Bravais lattice. More specifically:
+%
+\begin{align}
+    \nabla^2 \phi(\mathbold{r}) &= -4\pi \rho(\mathbold{r}) \\
+    \hat{\rho}(\mathbold{k}) &= \int_{V_{cell}} \rho(\mathbold{r}) \exp(-2\pi i \mathbold{k} \cdot \mathbold{r}) d\mathbold{r} \\
+    \rho(\mathbold{r}) &= \frac{1}{V_\text{cell}} \sum_{\mathbf{k}} \rho(\mathbold{k}) \exp(2\pi i \mathbold{k} \cdot \mathbold{r}) \\
+    \hat{\phi}(\mathbold{k}) &= \int_{V_{cell}}\phi(\mathbold{r}) \exp(-2\pi i \mathbold{k} \cdot \mathbold{r}) d\mathbold{r} = \frac{\hat{\rho}(\mathbold{k})}{\pi |\mathbold{k}|^2}
+\end{align}
+%
+After substitution, we obtain a trivially positive self-interaction energy:
+%
+\begin{align}
+    E_\text{self} &= \frac{1}{2\pi V_\text{cell}} \sum_{\mathbf{k}} \frac{ |\hat{\rho}(\mathbold{k})|^2 }{|\mathbold{k}|^2}
+\end{align}
+%
+Conclusion: the Coulomb (or Hartree) kernel is positive definite.
 
 
 \section{A general procedure to avoid the polarization catastrophe}
@@ -64,17 +97,23 @@ Let us first introduce a basis of density response functions:
 %
 where $\rho_\text{ref}(\mathbold{r})$ is a reference density from which the basis functions $f_i(\mathbold{r})$ describe (small) deviations. In practice, the reference is usually the ground state density and the response basis consists of atomic s-, p-, d-, ... type functions.
 
-When we substitute the response density (without the reference) into the Coulomb self-energy, the result looks like a traditional polarizable force field, except that the diagonal terms are the self-interactions of the basis functions:
+When we substitute the response density (without the reference) into the Coulomb self-energy, the result looks like a traditional polarizable force field, except that the diagonal coefficients, $T_{ii}$, are \textit{twice} the self-interaction of the corresponding basis functions:
 %
 \begin{align}
-    E_\text{PFF} &= \frac{1}{2} \sum_{i=1}^n \sum_{j=1}^n c_i c_j T_{ij} \\
+    E_\text{PFF-ish} &= \frac{1}{2} \sum_{i=1}^n \sum_{j=1}^n c_i c_j T_{ij} \\
     \label{eq:pff_matrix}
     T_{ij} &= \iint \frac{ f_i(\mathbold{r}) f_j(\mathbold{r}') }{| \mathbold{r} - \mathbold{r}' |} d\mathbold{r} d\mathbold{r}'
 \end{align}
 %
-This energy is always positive and the matrix $T$ is thus also positive definite. This implies that this energy always has a proper unique minimum and the polarization catastrophe cannot occur for a polarizable force field defined in this way. Moreover, one has the freedom to increase the diagonal elements of $T$, which will only make it ``more'' positive definite.
+This energy is always positive and the matrix $T$ is thus also positive definite.
 
-Conclusion: when the diagonal coefficients of PFF are equal to or larger than \textit{twice} the Coulomb self-interaction of the response basis functions, there is no polarization catastrophe, no matter how close the atoms approach each other.
+Let us compare this to an actual polarizable force field, using the same density basis functions, and including a perturbation in the external field.
+%
+\begin{equation}
+    E_\text{PFF} = \sum_{i=1}^n \left( \frac{a_i}{2} c_i^2 + b_i c_i \right) + \frac{1}{2} \sum_{i=1}^n \sum_{\substack{j=1 \\ j\ne i}}^n c_i c_j T_{ij}
+\end{equation}
+%
+Here $a_i$ are diagonal \textit{parameters} related to the atomic hardness (s-type function: $\eta_i=a_i$) or the atomic polarizability (p-type function: $\alpha_i=1/a_i$). The coefficients $b_i$ are due to a perturbation in the external field. When one makes sure that $a_i \ge T_{ii}$, this quadratic form is positive definite, always has a proper minimum and the polarization catastrophe cannot occur.
 
 Note: The above derivation just leads to a mathematical condition. It does not guarantee that PFFs constructed this way reproduce molecular polarizabilities accurately. In short, the electronic energy contains more than just the Hartree term, so this approach certainly misses some energy contributions.
 
